@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="DailyTrack: A local AI powered daily routine and efficiency tracker."/>
+  <title>DailyTrack - AI Routine Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Sora:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div class="app-shell">
+  <header class="suite-header">
+    <h1 class="suite-title"><span>DAILYTRACK</span>: DAILY ROUTINE AND EFFICIENCY TRACKER</h1>
+    <div class="suite-meta">
+      <div class="chip">IIT Patna</div>
+      <div class="chip">Date: <span id="today-date">Loading...</span></div>
+    </div>
+  </header>
+
+  <main class="suite-grid">
+    <!-- Panel 1: DailyTrack -->
+    <section class="panel panel-tasks">
+      <div class="panel-head">
+        <h2>DAILYTRACK</h2>
+        <div class="panel-head-actions">
+          <span class="head-icon">⏱</span>
+        </div>
+      </div>
+      <div class="panel-body split">
+        <div class="panel-main">
+          <div class="input-row glass-input">
+            <input type="text" class="task-input" id="task-input"
+                   placeholder="Add a new task... (or press '/' for AI)"
+                   maxlength="200" autocomplete="off"/>
+            <button class="icon-btn" id="add-btn">+</button>
+            <button class="icon-btn" id="add-work-btn">≡</button>
+          </div>
+
+          <div class="pending-banner" id="pending-banner">
+            <p><strong id="pending-cnt">0</strong> task(s) carried from yesterday.</p>
+          </div>
+
+          <div class="tasks-section">
+            <div class="tasks-header">
+              <div class="tasks-title">
+                Today's Tasks <span class="tasks-count-badge" id="tasks-count-badge">0</span>
+              </div>
+              <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">All</button>
+                <button class="filter-tab" data-filter="pending">Pending</button>
+                <button class="filter-tab" data-filter="done">Done</button>
+              </div>
+            </div>
+
+            <ul id="task-list"></ul>
+
+            <div class="empty-state" id="empty-state">
+              <div class="empty-title">No tasks yet</div>
+              <div class="empty-desc">Add a task above or open the task library to get started.</div>
+            </div>
+
+            <div class="tasks-actions" id="tasks-actions" style="display:none">
+              <button class="btn-action danger" id="clear-done-btn">Clear Completed</button>
+              <button class="btn-action success" id="complete-all-btn">Complete All</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="panel-side">
+          <div class="mini-card ring-card">
+            <div class="ring-wrap">
+              <svg viewBox="0 0 120 120" width="92" height="92">
+                <circle class="ring-bg" cx="60" cy="60" r="50"/>
+                <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="50"/>
+              </svg>
+              <div class="ring-center">
+                <div class="ring-pct" id="ring-pct">0%</div>
+              </div>
+            </div>
+            <div class="ring-label">Efficiency</div>
+            <div class="eff-status" id="eff-status">No tasks yet</div>
+            <div class="eff-desc" id="eff-desc">Add tasks to unlock insights.</div>
+            <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+          </div>
+
+          <div class="mini-card overview-card">
+            <div class="mini-title">AI Daily Overview</div>
+            <ul class="mini-list">
+              <li>Focus on strategic planning after 10 AM</li>
+              <li>Schedule team sync at 2 PM</li>
+              <li>Priority tasks identified</li>
+            </ul>
+          </div>
+
+          <div class="mini-card streak-card">
+            <div class="mini-title">Streaks & Stats</div>
+            <div class="streak-row">
+              <span class="streak-badge" id="streak-badge">🔥 0 day streak</span>
+              <span class="streak-sub">Last 7 days</span>
+            </div>
+            <div class="spark-bars" id="spark-bars">
+              <span class="spark-bar" style="--h:0%"></span>
+              <span class="spark-bar" style="--h:0%"></span>
+              <span class="spark-bar" style="--h:0%"></span>
+              <span class="spark-bar" style="--h:0%"></span>
+              <span class="spark-bar" style="--h:0%"></span>
+              <span class="spark-bar" style="--h:0%"></span>
+              <span class="spark-bar" style="--h:0%"></span>
+            </div>
+            <div class="spark-days" id="spark-days" aria-hidden="true">
+              <span class="spark-day">Mon</span>
+              <span class="spark-day">Tue</span>
+              <span class="spark-day">Wed</span>
+              <span class="spark-day">Thu</span>
+              <span class="spark-day">Fri</span>
+              <span class="spark-day">Sat</span>
+              <span class="spark-day">Sun</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Panel 2: Stats & Insights -->
+    <section class="panel panel-insights">
+      <div class="panel-head">
+        <h2>DAILYTRACK STATS &amp; INSIGHTS</h2>
+        <div class="panel-head-actions">
+          <span class="head-icon">⏱</span>
+        </div>
+      </div>
+      <div class="panel-body insights-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Monthly Efficiency Trend</div>
+            <div class="chart-controls">
+              <div class="chart-subtitle">Last 30 days</div>
+              <button class="ghost-btn" id="clear-analytics-btn">Clear Analytics</button>
+            </div>
+          </div>
+          <div class="chart-grid">
+            <svg class="chart-svg" viewBox="0 0 520 160" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="lineFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <polyline class="chart-line" points="0,140 40,140 80,140 120,140 160,140 200,140 240,140 280,140 320,140 360,140 400,140 440,140 480,140 520,140" />
+              <polygon class="chart-area" points="0,160 0,140 40,140 80,140 120,140 160,140 200,140 240,140 280,140 320,140 360,140 400,140 440,140 480,140 520,140 520,160" />
+            </svg>
+            <div class="chart-axis" id="chart-axis"></div>
+          </div>
+        </div>
+
+        <div class="gains-card">
+          <div class="mini-title">Efficiency Gains</div>
+          <div class="gain-list">
+            <div class="gain-row"><span>Total Tasks</span><strong id="total-count">0</strong></div>
+            <div class="gain-row"><span>Completed</span><strong id="done-count">0</strong></div>
+            <div class="gain-row"><span>Pending</span><strong id="pending-count">0</strong></div>
+            <div class="gain-row"><span>Efficiency</span><strong id="efficiency-val">0%</strong></div>
+          </div>
+        </div>
+
+        <div class="donut-card">
+          <div class="mini-title">Project Breakdown</div>
+          <div class="donut-wrap">
+            <svg class="donut" viewBox="0 0 120 120">
+              <circle class="donut-ring" cx="60" cy="60" r="44" />
+              <circle class="donut-seg seg-a" cx="60" cy="60" r="44" />
+              <circle class="donut-seg seg-b" cx="60" cy="60" r="44" />
+              <circle class="donut-seg seg-c" cx="60" cy="60" r="44" />
+              <circle class="donut-seg seg-d" cx="60" cy="60" r="44" />
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-item"><span class="dot a"></span><span id="seg-a-label">Development 0%</span></div>
+              <div class="legend-item"><span class="dot b"></span><span id="seg-b-label">Planning 0%</span></div>
+              <div class="legend-item"><span class="dot c"></span><span id="seg-c-label">Marketing 0%</span></div>
+              <div class="legend-item"><span class="dot d"></span><span id="seg-d-label">Other 0%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 4: AI Coach -->
+    <section class="panel panel-coach">
+      <div class="panel-head ai-panel-header" id="ai-panel-toggle">
+        <h2>
+          <span class="ai-dot" id="ai-dot"></span>
+          YOUR DAILY AI COACH
+        </h2>
+        <span class="ai-toggle-icon" id="ai-toggle-icon">▲ Collapse</span>
+      </div>
+
+      <div class="ai-panel-body open" id="ai-panel-body">
+        <div class="coach-input">
+          <input class="coach-input-field" id="coach-input" type="text" placeholder="Ask Coach about my priorities or make a request..."/>
+          <button class="coach-send" onclick="AIModule.askCoach()">Send</button>
+        </div>
+
+        <div class="model-row">
+          <label>Model:</label>
+          <input type="text" class="model-input" id="model-input"
+                 value="llama3.2:3b-instruct-q4_K_M" placeholder="e.g. llama3.2:3b-instruct-q4_K_M"/>
+          <button class="btn-connect" id="connect-btn">Test Connection</button>
+        </div>
+
+        <div class="ai-output" id="ai-output"></div>
+        <button class="btn-add-ai-tasks" id="add-ai-tasks-btn">Add These Tasks to List</button>
+
+        <div class="coach-subtitle">Recommended Routines</div>
+        <div class="ai-features">
+          <button class="ai-feat-btn" onclick="AIModule.run('planday')">
+            <span class="feat-icon">☀️</span>
+            <div class="feat-name">Morning Focus Power Hour</div>
+            <div class="feat-desc">A structured 60-minute deep work sprint to start your day.</div>
+          </button>
+          <button class="ai-feat-btn" onclick="AIModule.run('coach')">
+            <span class="feat-icon">🧘</span>
+            <div class="feat-name">Mindful Breathing Break</div>
+            <div class="feat-desc">Short guided reset to reduce stress and restore clarity.</div>
+          </button>
+          <button class="ai-feat-btn" onclick="AIModule.run('prioritize')">
+            <span class="feat-icon">🎯</span>
+            <div class="feat-name">Priority Sort &amp; Reflect</div>
+            <div class="feat-desc">AI ranks pending tasks and suggests your next best move.</div>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="suite-footer">
+    Built by <strong>Harsh Raj</strong> · ua2503cdh411 · IIT Patna · Capstone-I
+  </footer>
+</div>
+
+<!-- ── Add Work Modal ── -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📋 Task Library - Pick Your Work</div>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="cat-tabs" id="cat-tabs"></div>
+      <div class="work-grid" id="work-grid"></div>
+    </div>
+    <div class="modal-footer">
+      <div class="sel-count">Selected: <span id="sel-count">0</span> tasks</div>
+      <button class="btn-add-selected" id="add-selected-btn" disabled>Add Selected Tasks</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast">
+  <span id="toast-icon">✅</span>
+  <span id="toast-msg">Done!</span>
+</div>
+
+<!-- ── Scripts ── -->
+<script src="JS/utils.js"></script>
+<script src="JS/dataset.js"></script>
+<script src="JS/tasks.js"></script>
+<script src="JS/modal.js"></script>
+<script src="JS/ai.js"></script>
+<script src="JS/app.js"></script>
+
+</body>
+</html>
