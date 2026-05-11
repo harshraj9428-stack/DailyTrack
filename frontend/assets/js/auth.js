@@ -38,16 +38,19 @@ const authSubmitBtn = document.getElementById('auth-submit-btn');
 const authForm = document.getElementById('email-auth-form');
 const googleBtn = document.getElementById('google-login');
 const guestBtn = document.getElementById('guest-login');
+const welcomeLoginBtn = document.getElementById('welcome-login-btn');
 
 // ── Initialization ─────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   if (user) {
     console.log("User logged in:", user.email || "Guest");
+    document.body.classList.remove('unauthenticated');
     updateAuthUI(true);
     await syncDataFromFirestore();
   } else {
     console.log("User logged out");
+    document.body.classList.add('unauthenticated');
     updateAuthUI(false);
     // When logged out, we rely on localStorage as before
   }
@@ -94,6 +97,7 @@ function switchTab(mode) {
 
 // ── Event Listeners ───────────────────────────────────
 loginTrigger?.addEventListener('click', () => authModal.classList.add('show'));
+welcomeLoginBtn?.addEventListener('click', () => authModal.classList.add('show'));
 tabLogin?.addEventListener('click', () => switchTab('login'));
 tabSignup?.addEventListener('click', () => switchTab('signup'));
 

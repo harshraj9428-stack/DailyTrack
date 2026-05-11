@@ -10,7 +10,17 @@
   <link rel="stylesheet" href="assets/css/style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
-<body>
+<body class="unauthenticated">
+
+<!-- ── Welcome / Login Overlay ── -->
+<div class="welcome-overlay" id="welcome-overlay">
+  <div class="welcome-content">
+    <div class="welcome-logo">🚀 DAILYTRACK</div>
+    <h1>Master Your Routine</h1>
+    <p>Unlock AI-powered productivity, real-time analytics, and cloud sync. Please login to continue.</p>
+    <button class="btn-welcome-login" id="welcome-login-btn">Get Started</button>
+  </div>
+</div>
 
 <div class="app-shell">
   <header class="suite-header">
@@ -286,7 +296,7 @@
   <div class="modal auth-modal-inner">
     <div class="modal-header">
       <div class="modal-title">🔐 Secure Access</div>
-      <button class="modal-close" onclick="document.getElementById('auth-modal').classList.remove('show')">✕</button>
+      <!-- Close button removed to force login -->
     </div>
     <div class="modal-body auth-body">
       <div class="auth-tabs">
