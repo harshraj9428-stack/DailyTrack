@@ -8,6 +8,8 @@ import {
   db, 
   googleProvider, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signInAnonymously, 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -52,8 +54,17 @@ onAuthStateChanged(auth, async (user) => {
     console.log("User logged out");
     document.body.classList.add('unauthenticated');
     updateAuthUI(false);
-    // When logged out, we rely on localStorage as before
   }
+});
+
+// Handle Redirect Result (for Google Login)
+getRedirectResult(auth).then((result) => {
+  if (result?.user) {
+    if (window.Toast) window.Toast.show('Welcome back!', '🌐');
+  }
+}).catch((error) => {
+  console.error("Redirect error:", error);
+  window.Toast.show(error.message, '❌');
 });
 
 // ── UI Updates ─────────────────────────────────────────
@@ -103,7 +114,7 @@ tabSignup?.addEventListener('click', () => switchTab('signup'));
 
 logoutBtn?.addEventListener('click', () => {
   signOut(auth).then(() => {
-    window.Toast.show('Logged out successfully', '👋');
+    if (window.Toast) window.Toast.show('Logged out successfully', '👋');
     // Clear local tasks if we want to be strict, but keeping them for guest experience
   });
 });
@@ -116,34 +127,34 @@ authForm?.addEventListener('submit', async (e) => {
   try {
     if (authMode === 'login') {
       await signInWithEmailAndPassword(auth, email, password);
-      window.Toast.show('Welcome back!', '🔑');
+      if (window.Toast) window.Toast.show('Welcome back!', '🔑');
     } else {
       await createUserWithEmailAndPassword(auth, email, password);
-      window.Toast.show('Account created!', '🌱');
+      if (window.Toast) window.Toast.show('Account created!', '🌱');
     }
   } catch (error) {
     console.error("Auth error:", error);
-    window.Toast.show(error.message, '❌');
+    if (window.Toast) window.Toast.show(error.message, '❌');
   }
 });
 
 googleBtn?.addEventListener('click', async () => {
   try {
-    await signInWithPopup(auth, googleProvider);
-    window.Toast.show('Signed in with Google', '🌐');
+    // Switch to Redirect to avoid COOP popup blocks on localhost
+    await signInWithRedirect(auth, googleProvider);
   } catch (error) {
     console.error("Google login error:", error);
-    window.Toast.show(error.message, '❌');
+    if (window.Toast) window.Toast.show(error.message, '❌');
   }
 });
 
 guestBtn?.addEventListener('click', async () => {
   try {
     await signInAnonymously(auth);
-    window.Toast.show('Continuing as Guest', '👤');
+    if (window.Toast) window.Toast.show('Continuing as Guest', '👤');
   } catch (error) {
     console.error("Guest login error:", error);
-    window.Toast.show(error.message, '❌');
+    if (window.Toast) window.Toast.show(error.message, '❌');
   }
 });
 
@@ -190,7 +201,7 @@ async function saveDataToFirestore() {
   try {
     const userDocRef = doc(db, 'users', currentUser.uid);
     await setDoc(userDocRef, {
-      tasks: window.tasks,
+      tasks: window.tasks || [],
       history: JSON.parse(localStorage.getItem(window.STORAGE_KEYS?.history || 'dt_eff_history') || '{}'),
       lastSync: Date.now()
     }, { merge: true });

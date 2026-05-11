@@ -345,3 +345,6 @@ const AIModule = (() => {
 
   return { init, run, quickBreakdown, askCoach };
 })();
+
+// Expose to global scope for module access
+window.AIModule = AIModule;

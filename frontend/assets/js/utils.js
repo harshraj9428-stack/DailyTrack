@@ -83,3 +83,7 @@ const Streak = (() => {
 function uid() {
   return Date.now() + Math.random();
 }
+
+// Expose to global scope for module access
+window.STORAGE_KEYS = STORAGE_KEYS;
+window.Toast = Toast;

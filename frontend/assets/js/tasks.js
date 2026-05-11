@@ -479,3 +479,9 @@ function initFilterTabs() {
     });
   });
 }
+
+// Expose to global scope for module access
+window.tasks = tasks;
+window.renderTasks = renderTasks;
+window.toggleTask = toggleTask;
+window.deleteTask = deleteTask;
