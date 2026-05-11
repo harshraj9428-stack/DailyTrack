@@ -2,23 +2,31 @@
 
 DailyTrack is a polished, single-page routine and productivity tracker built for IIT Patna CS/DA students. It combines a task manager, efficiency analytics, streak tracking, and an optional local-AI assistant powered by Ollama via a lightweight FastAPI backend.
 
+> **Looking for technical details?** Check out the [Comprehensive Technical Documentation](./DOCUMENTATION.md).
+
 ![DailyTrack UI](https://img.shields.io/badge/UI-Glassmorphism-blue) ![Stack](https://img.shields.io/badge/Stack-HTML5%20%7C%20Vanilla%20JS%20%7C%20FastAPI-success) 
 
 ## ✨ Features
-- **Task Management**: Seamlessly add, complete, delete, clear completed, and complete-all actions.
+- **Smart Auth**: 3-way login (Google, Email/Password, Guest) powered by Firebase.
+- **Cloud Sync**: Real-time data synchronization across devices using Firebase Firestore.
+- **Task Management**: Seamlessly add, complete, delete, clear completed, clear all, and complete-all actions.
 - **Efficiency Analytics**: Live stats cards, dynamic progress rings, and intelligent status messaging.
 - **Streak Tracking**: Built-in logic with day-over-day carry-forward of incomplete tasks.
 - **Task Library**: A modal packed with curated student-focused productivity categories.
 - **AI Assistant Panel**: Interacts with your local LLM (llama3.2) to:
-  - Break down complex tasks into subtasks.
-  - Plan a structured, time-blocked day.
-  - Provide productivity coaching tips.
-  - Automatically prioritize pending tasks based on efficiency.
+  - **Breakdown**: Decompose complex tasks into actionable subtasks.
+  - **Plan Day**: Create a structured, time-blocked daily schedule.
+  - **Coach**: Get personalized productivity tips based on your current performance.
+  - **Prioritize**: Automatically rank pending tasks by urgency and importance.
+  - **Weekly Audit**: Get a comprehensive AI analysis of your last 7 days of performance.
+- **UX Delights**: Real-time sync indicators and rewarding confetti celebrations on 100% completion.
 
 ## 🛠️ Tech Stack
-- **Frontend**: `index.html`, `style.css` (Glassmorphism), vanilla JavaScript modules in `JS/`.
-- **Backend**: FastAPI (`backend/main.py`) serving as a robust proxy for Ollama requests.
-- **Storage**: Browser `localStorage` for privacy and offline persistence.
+- **Frontend**: `index.html`, `style.css` (Glassmorphism), vanilla JavaScript.
+- **Backend**: FastAPI (`backend/main.py`) serving as a proxy for Ollama requests.
+- **Database/Auth**: **Firebase** (Authentication & Firestore) for cloud persistence.
+- **AI Engine**: Ollama (local LLM).
+- **Storage**: Hybrid model — `localStorage` for quick access and **Firestore** for cloud backup/sync.
 
 ## 📁 Project Structure
 - `index.html` – Main UI markup, layout, and SEO tags.

@@ -109,16 +109,17 @@ const AIModule = (() => {
 
   // ── AI Feature: Break Down Task ──────────────────────
   async function breakdown() {
-    const pending = tasks.filter(t => !t.done).map(t => t.text);
+    const pending = tasks.filter(t => !t.done);
     if (!pending.length) {
       showOutput('<span style="color:var(--amber)">No pending tasks to break down. Add a task first!</span>');
       return;
     }
 
-    showTyping(`Breaking down: "${pending[0]}"`);
+    const taskToBreak = pending[0];
+    showTyping(`Breaking down: "${taskToBreak.text}"`);
     const prompt =
       `Break down this task into 5-6 specific, actionable subtasks for a CS student:\n` +
-      `"${pending[0]}"\n\n` +
+      `"${taskToBreak.text}"\n\n` +
       `Return ONLY a numbered list. Each subtask should take 15–30 minutes.`;
 
     try {
@@ -126,14 +127,14 @@ const AIModule = (() => {
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ]);
-      showOutput(text);
+      showOutput(`<strong>Subtasks for: ${taskToBreak.text}</strong><br><br>${text.replace(/\n/g, '<br>')}`);
 
       const lines = extractTaskLines(text);
       if (lines.length) {
         aiTaskBuffer = lines;
         document.getElementById('add-ai-tasks-btn').classList.add('show');
       }
-    } catch { showError(); }
+    } catch (err) { showError(err.message); }
   }
 
   // ── AI Feature: Plan My Day ──────────────────────────
@@ -156,13 +157,13 @@ const AIModule = (() => {
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ]);
-      showOutput(text);
+      showOutput(`<strong>Today's AI-Powered Schedule</strong><br><br>${text.replace(/\n/g, '<br>')}`);
       const lines = extractTaskLines(text);
       if (lines.length) {
         aiTaskBuffer = lines;
         document.getElementById('add-ai-tasks-btn').classList.add('show');
       }
-    } catch { showError(); }
+    } catch (err) { showError(err.message); }
   }
 
   // ── AI Feature: Efficiency Coach ────────────────────
@@ -184,8 +185,8 @@ const AIModule = (() => {
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ]);
-      showOutput(text);
-    } catch { showError(); }
+      showOutput(`<strong>AI Productivity Coaching</strong><br><br>${text.replace(/\n/g, '<br>')}`);
+    } catch (err) { showError(err.message); }
   }
 
   // ── AI Feature: Direct Coach Question ───────────────
@@ -203,9 +204,9 @@ const AIModule = (() => {
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: query }
       ]);
-      showOutput(text);
+      showOutput(`<strong>AI Coach Response</strong><br><br>${text.replace(/\n/g, '<br>')}`);
       input.value = '';
-    } catch { showError(); }
+    } catch (err) { showError(err.message); }
   }
 
   // ── AI Feature: Prioritize Tasks ────────────────────
@@ -230,8 +231,47 @@ const AIModule = (() => {
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ]);
-      showOutput(text);
-    } catch { showError(); }
+      showOutput(`<strong>AI Priority Recommendations</strong><br><br>${text.replace(/\n/g, '<br>')}`);
+    } catch (err) { showError(err.message); }
+  }
+
+  // ── AI Feature: Weekly Performance Audit ────────────
+  async function weeklyReport() {
+    const history = JSON.parse(localStorage.getItem(window.STORAGE_KEYS?.history || 'dt_eff_history') || '{}');
+    const now = new Date();
+    const last7Days = [];
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      last7Days.push({ date: key, efficiency: history[key] || 0 });
+    }
+
+    const avg = Math.round(last7Days.reduce((acc, curr) => acc + curr.efficiency, 0) / 7);
+    const historyText = last7Days.map(d => `${d.date}: ${d.efficiency}%`).join('\n');
+
+    showTyping('Auditing your week');
+
+    const prompt =
+      `As a senior academic coach for an IIT Patna student, analyze this 7-day performance report:\n\n` +
+      `Weekly Efficiency Data:\n${historyText}\n` +
+      `Average Efficiency: ${avg}%\n\n` +
+      `Tasks for today:\n${tasks.map(t => t.text).join(', ') || 'No tasks'}\n\n` +
+      `Please provide:\n` +
+      `1. A summary of their weekly trend.\n` +
+      `2. Identification of peak productivity days vs. slumps.\n` +
+      `3. Strategic advice for the upcoming week.\n` +
+      `4. A motivational "Efficiency Grade" (A-F) based on the IIT Patna grading scale.\n\n` +
+      `Keep the tone professional yet supportive.`;
+
+    try {
+      const text = await streamChat([
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: prompt }
+      ]);
+      showOutput(`<strong>Weekly Performance Audit</strong><br><br>${text.replace(/\n/g, '<br>')}`);
+    } catch (err) { showError(err.message); }
   }
 
   // ── Quick breakdown from task row 🤖 button ──────────
@@ -259,14 +299,14 @@ const AIModule = (() => {
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: prompt }
       ]);
-      showOutput(text);
+      showOutput(`<strong>Breakdown for: ${task.text}</strong><br><br>${text.replace(/\n/g, '<br>')}`);
       const lines = extractTaskLines(text);
       if (lines.length) {
         aiTaskBuffer = lines;
         document.getElementById('add-ai-tasks-btn').classList.add('show');
       }
-    } catch {
-      showError('<br><br>You can also try clicking "Test Connection" first.');
+    } catch (err) {
+      showError(err.message + '<br><br>You can also try clicking "Test Connection" first.');
     }
   }
 
@@ -280,7 +320,7 @@ const AIModule = (() => {
 
   // ── Dispatcher ───────────────────────────────────────
   function run(type) {
-    const actions = { breakdown, planday: planDay, coach, prioritize };
+    const actions = { breakdown, planday: planDay, coach, prioritize, weekly: weeklyReport };
     if (actions[type]) actions[type]();
   }
 

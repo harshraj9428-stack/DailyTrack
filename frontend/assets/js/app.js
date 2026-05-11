@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Wire up task bottom actions ──────────────────────
+  document.getElementById('clear-all-btn').addEventListener('click', clearAll);
   document.getElementById('clear-done-btn').addEventListener('click', clearCompleted);
   document.getElementById('complete-all-btn').addEventListener('click', completeAll);
 

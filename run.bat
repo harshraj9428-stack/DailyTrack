@@ -13,7 +13,7 @@ if not exist ".venv\Scripts\activate.bat" (
     
     echo [1/4] Installing backend dependencies...
     call .venv\Scripts\activate.bat
-    pip install fastapi uvicorn requests
+    pip install -r backend/requirements.txt
 ) else (
     echo [1/4] Virtual environment found.
 )
@@ -22,7 +22,7 @@ echo [2/4] Starting FastAPI backend on port 8000...
 start "DailyTrack Backend" cmd /k "call .venv\Scripts\activate.bat && uvicorn backend.main:app --reload --port 8000"
 
 echo [3/4] Starting Frontend server on port 5500...
-start "DailyTrack Frontend" cmd /k "python -m http.server 5500"
+start "DailyTrack Frontend" cmd /k "cd frontend && python -m http.server 5500"
 
 echo [4/4] Starting Ollama server (Local LLM)...
 start "Ollama Server" cmd /c "echo If Ollama is already running, this window might show an address error, which is normal. && ollama serve"

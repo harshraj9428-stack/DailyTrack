@@ -25,6 +25,7 @@ const Modal = (() => {
       .map(([key, cat]) => `
         <button
           class="cat-tab ${key === activeCat ? 'active' : ''}"
+          data-cat="${key}"
           onclick="Modal.switchCategory('${key}')">
           ${cat.label}
         </button>`)
@@ -33,9 +34,9 @@ const Modal = (() => {
 
   function switchCategory(catKey) {
     activeCat = catKey;
-    // Update active tab styling
+    // Update active tab styling using data-cat attribute
     document.querySelectorAll('.cat-tab').forEach(btn => {
-      btn.classList.toggle('active', btn.textContent.trim() === TASK_DATASET[catKey].label);
+      btn.classList.toggle('active', btn.dataset.cat === catKey);
     });
     renderWorkGrid();
   }

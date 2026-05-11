@@ -6,11 +6,17 @@
 // ── State ─────────────────────────────────────────────
 let tasks = [];
 let currentFilter = 'all';
+let confettiFired = false;
 
 // ── Persistence ───────────────────────────────────────
 function saveTasks() {
   localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(tasks));
   localStorage.setItem(STORAGE_KEYS.date, todayStr());
+  
+  // Trigger Cloud Sync if logged in
+  if (window.saveDataToFirestore) {
+    window.saveDataToFirestore();
+  }
 }
 
 function loadTasks() {
@@ -179,7 +185,7 @@ function updateDonut() {
   tasks.forEach(t => {
     if (t.category === 'tech') dev++;
     else if (t.category === 'academics') plan++;
-    else if (t.category === 'daily') market++;
+    else if (t.category === 'health' || t.category === 'selflearn') market++;
     else other++;
   });
 
@@ -202,7 +208,7 @@ function updateDonut() {
     document.getElementById('seg-c-label'),
     document.getElementById('seg-d-label'),
   ];
-  const names = ['Development', 'Planning', 'Marketing', 'Other'];
+  const names = ['Tech & Work', 'Academics', 'Self/Health', 'Other'];
   labels.forEach((el, i) => {
     if (el) {
       const pct = total === 0 ? 0 : Math.round((values[i] / total) * 100);
@@ -211,10 +217,51 @@ function updateDonut() {
   });
 }
 
+function updateOverview() {
+  const el = document.querySelector('.overview-card .mini-list');
+  if (!el) return;
+
+  const total = tasks.length;
+  const done = tasks.filter(t => t.done).length;
+  const pending = tasks.filter(t => !t.done);
+
+  if (total === 0) {
+    el.innerHTML = `
+      <li>No tasks for today yet.</li>
+      <li>Open the Task Library to start.</li>
+      <li>Or ask AI to plan your day!</li>
+    `;
+    return;
+  }
+
+  let items = [];
+  if (done === total) {
+    items = [
+      'All tasks completed! Great job! 🚀',
+      'Enjoy your free time or relax.',
+      'Consider planning for tomorrow.'
+    ];
+  } else {
+    items = [
+      `${done} of ${total} tasks finished.`,
+      pending.length > 0 ? `Focus on: ${pending[0].text}` : 'Finishing touches...',
+      'Check AI Coach for priority tips.'
+    ];
+  }
+
+  el.innerHTML = items.map(it => `<li>${it}</li>`).join('');
+}
+
 function clearAnalytics() {
   localStorage.removeItem(STORAGE_KEYS.history);
   updateTrendChart(Array(30).fill(0));
   updateSparkBars(Array(7).fill(0));
+  
+  // Trigger Cloud Sync if logged in
+  if (window.saveDataToFirestore) {
+    window.saveDataToFirestore();
+  }
+
   Toast.show('Analytics cleared.', '🧹');
 }
 
@@ -267,6 +314,16 @@ function clearCompleted() {
   if (removed > 0) Toast.show(`${removed} completed task(s) cleared.`, '🗑');
 }
 
+function clearAll() {
+  if (tasks.length === 0) return;
+  if (confirm('Are you sure you want to clear ALL tasks for today?')) {
+    tasks = [];
+    saveTasks();
+    renderTasks();
+    Toast.show('All tasks cleared.', '🗑');
+  }
+}
+
 function completeAll() {
   tasks.forEach(t => t.done = true);
   saveTasks();
@@ -315,6 +372,14 @@ function renderTasks() {
   document.getElementById('progress-bar').style.width = pct + '%';
   document.getElementById('efficiency-val').style.color = color;
 
+  // Confetti on 100% completion
+  if (pct === 100 && total > 0 && !confettiFired) {
+    fireConfetti();
+    confettiFired = true;
+  } else if (pct < 100) {
+    confettiFired = false;
+  }
+
   // Filter tasks
   const filtered = tasks.filter(t => {
     if (currentFilter === 'done')    return t.done;
@@ -342,6 +407,7 @@ function renderTasks() {
   updateTrendChart(getLastNDaysValues(history, 30));
   updateSparkBars(getLastNDaysValues(history, 7));
   updateDonut();
+  updateOverview();
 }
 
 // ── Build single task HTML ────────────────────────────
@@ -380,6 +446,27 @@ function buildTaskHTML(task) {
     </li>`;
 }
 
+
+function fireConfetti() {
+  const duration = 3 * 1000;
+  const animationEnd = Date.now() + duration;
+  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 2000 };
+
+  const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+  const interval = setInterval(function() {
+    const timeLeft = animationEnd - Date.now();
+
+    if (timeLeft <= 0) {
+      return clearInterval(interval);
+    }
+
+    const particleCount = 50 * (timeLeft / duration);
+    // since particles fall down, start a bit higher than random
+    confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+    confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+  }, 250);
+}
 
 // ── Filter listener setup ─────────────────────────────
 function initFilterTabs() {
