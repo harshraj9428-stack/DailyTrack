@@ -84,6 +84,12 @@ function uid() {
   return Date.now() + Math.random();
 }
 
-// Expose to global scope for module access
+// Expose to global scope for module access (ES Modules support)
 window.STORAGE_KEYS = STORAGE_KEYS;
 window.Toast = Toast;
+window.Streak = Streak;
+window.todayStr = todayStr;
+window.formatDate = formatDate;
+window.formatTime = formatTime;
+window.escHtml = escHtml;
+window.uid = uid;

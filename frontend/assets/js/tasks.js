@@ -408,6 +408,36 @@ function renderTasks() {
   updateSparkBars(getLastNDaysValues(history, 7));
   updateDonut();
   updateOverview();
+  updateScorecard(history);
+}
+
+function updateScorecard(history) {
+  const last7 = getLastNDaysValues(history, 7);
+  const avg = Math.round(last7.reduce((a, b) => a + b, 0) / 7);
+  
+  const gradeEl = document.getElementById('score-grade');
+  const avgEl = document.getElementById('score-avg');
+  const msgEl = document.getElementById('score-msg');
+  
+  if (!gradeEl || !avgEl || !msgEl) return;
+
+  avgEl.textContent = avg + '%';
+  
+  let grade = '--';
+  let color = 'var(--text2)';
+  let msg = 'Add tasks to calculate your grade.';
+
+  if (avg >= 90) { grade = 'A+'; color = 'var(--green)'; msg = 'IITP Scholar Level! 💎'; }
+  else if (avg >= 80) { grade = 'A'; color = 'var(--green)'; msg = 'Outstanding Performance! 🚀'; }
+  else if (avg >= 70) { grade = 'B+'; color = 'var(--green)'; msg = 'Great Momentum! 👍'; }
+  else if (avg >= 60) { grade = 'B'; color = 'var(--amber)'; msg = 'Above Average. Push more!'; }
+  else if (avg >= 50) { grade = 'C'; color = 'var(--amber)'; msg = 'Steady progress.'; }
+  else if (avg > 0) { grade = 'D'; color = 'var(--red)'; msg = 'Focus on consistency.'; }
+  else if (tasks.length > 0) { grade = 'F'; color = 'var(--red)'; msg = 'Start checking off tasks!'; }
+
+  gradeEl.textContent = grade;
+  gradeEl.style.color = color;
+  msgEl.textContent = msg;
 }
 
 // ── Build single task HTML ────────────────────────────

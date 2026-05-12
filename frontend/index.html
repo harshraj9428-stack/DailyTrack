@@ -10,7 +10,13 @@
   <link rel="stylesheet" href="assets/css/style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
-<body class="unauthenticated">
+<body class="loading">
+
+<!-- ── Loading Overlay ── -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loader"></div>
+  <p>Verifying Session...</p>
+</div>
 
 <!-- ── Welcome / Login Overlay ── -->
 <div class="welcome-overlay" id="welcome-overlay">
@@ -103,10 +109,25 @@
                 <div class="ring-pct" id="ring-pct">0%</div>
               </div>
             </div>
-            <div class="ring-label">Efficiency</div>
+            <div class="ring-label">Daily Efficiency</div>
             <div class="eff-status" id="eff-status">No tasks yet</div>
             <div class="eff-desc" id="eff-desc">Add tasks to unlock insights.</div>
             <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+          </div>
+
+          <div class="mini-card scorecard-card">
+            <div class="mini-title">Performance Scorecard</div>
+            <div class="score-grid">
+              <div class="score-item">
+                <div class="score-val" id="score-grade">--</div>
+                <div class="score-label">IITP Grade</div>
+              </div>
+              <div class="score-item">
+                <div class="score-val" id="score-avg">0%</div>
+                <div class="score-label">Weekly Avg</div>
+              </div>
+            </div>
+            <div class="score-status" id="score-msg">Add tasks to calculate your grade</div>
           </div>
 
           <div class="mini-card overview-card">
