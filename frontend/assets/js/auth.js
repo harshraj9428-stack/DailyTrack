@@ -25,6 +25,7 @@ import {
 // ── State ─────────────────────────────────────────────
 let currentUser = null;
 let isSyncing = false;
+let pendingSync = false;
 let authMode = 'login'; // 'login' or 'signup'
 
 // ── Elements ──────────────────────────────────────────
@@ -66,12 +67,29 @@ onAuthStateChanged(auth, async (user) => {
 // Handle Redirect Result (for Google Login)
 getRedirectResult(auth).then((result) => {
   if (result?.user) {
-    if (window.Toast) window.Toast.show('Welcome back!', '🌐');
+    console.log("Redirect login successful:", result.user.email);
+    if (window.Toast) window.Toast.show('Google login successful!', '🌐');
   }
 }).catch((error) => {
   console.error("Redirect error:", error);
-  window.Toast.show(error.message, '❌');
+  const friendly = mapAuthError(error.code);
+  if (window.Toast) window.Toast.show(friendly, '❌');
 });
+
+// Map Firebase Error Codes to User Friendly Messages
+function mapAuthError(code) {
+  switch (code) {
+    case 'auth/invalid-email': return 'Invalid email address format.';
+    case 'auth/user-not-found': return 'No account found with this email.';
+    case 'auth/wrong-password': return 'Incorrect password. Please try again.';
+    case 'auth/email-already-in-use': return 'An account already exists with this email.';
+    case 'auth/weak-password': return 'Password is too weak (min 6 chars).';
+    case 'auth/invalid-credential': return 'Invalid login credentials.';
+    case 'auth/popup-closed-by-user': return 'Login window was closed.';
+    case 'auth/cancelled-via-redirect': return 'Login was cancelled.';
+    default: return 'Authentication failed. Please try again.';
+  }
+}
 
 // ── UI Updates ─────────────────────────────────────────
 function updateAuthUI(isLoggedIn) {
@@ -113,8 +131,14 @@ function switchTab(mode) {
 }
 
 // ── Event Listeners ───────────────────────────────────
-loginTrigger?.addEventListener('click', () => authModal.classList.add('show'));
-welcomeLoginBtn?.addEventListener('click', () => authModal.classList.add('show'));
+loginTrigger?.addEventListener('click', () => {
+  authModal.classList.add('show');
+  document.getElementById('auth-email')?.focus();
+});
+welcomeLoginBtn?.addEventListener('click', () => {
+  authModal.classList.add('show');
+  document.getElementById('auth-email')?.focus();
+});
 tabLogin?.addEventListener('click', () => switchTab('login'));
 tabSignup?.addEventListener('click', () => switchTab('signup'));
 
@@ -127,8 +151,23 @@ logoutBtn?.addEventListener('click', () => {
 
 authForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = document.getElementById('auth-email').value;
+  const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
+
+  // Basic Validation
+  if (!email || !password) {
+    if (window.Toast) window.Toast.show('Please fill all fields', '⚠️');
+    return;
+  }
+  if (password.length < 6) {
+    if (window.Toast) window.Toast.show('Password must be 6+ chars', '⚠️');
+    return;
+  }
+
+  // Set Loading State
+  const originalText = authSubmitBtn.textContent;
+  authSubmitBtn.disabled = true;
+  authSubmitBtn.textContent = 'Authenticating...';
 
   try {
     if (authMode === 'login') {
@@ -140,7 +179,11 @@ authForm?.addEventListener('submit', async (e) => {
     }
   } catch (error) {
     console.error("Auth error:", error);
-    if (window.Toast) window.Toast.show(error.message, '❌');
+    const friendly = mapAuthError(error.code);
+    if (window.Toast) window.Toast.show(friendly, '❌');
+  } finally {
+    authSubmitBtn.disabled = false;
+    authSubmitBtn.textContent = originalText;
   }
 });
 
@@ -182,7 +225,13 @@ async function syncDataFromFirestore() {
       
       // Update history if exists
       if (data.history) {
-        localStorage.setItem('DAILYTRACK_HISTORY', JSON.stringify(data.history));
+        localStorage.setItem(window.STORAGE_KEYS?.history || 'dt_eff_history', JSON.stringify(data.history));
+      }
+
+      // Update streak if exists
+      if (data.streak !== undefined) {
+        localStorage.setItem(window.STORAGE_KEYS?.streak || 'dt_streak', data.streak);
+        if (window.Streak) window.Streak.render();
       }
     }
   } else {
@@ -193,12 +242,18 @@ async function syncDataFromFirestore() {
 }
 
 async function saveDataToFirestore() {
-  if (!currentUser || isSyncing) return;
+  if (!currentUser) return;
+  if (isSyncing) {
+    pendingSync = true;
+    return;
+  }
   
   const syncInd = document.getElementById('sync-indicator');
   const syncTxt = syncInd?.querySelector('.sync-text');
 
   isSyncing = true;
+  pendingSync = false;
+  
   if (syncInd) {
     syncInd.classList.add('syncing');
     syncTxt.textContent = 'Syncing...';
@@ -209,6 +264,7 @@ async function saveDataToFirestore() {
     await setDoc(userDocRef, {
       tasks: window.tasks || [],
       history: JSON.parse(localStorage.getItem(window.STORAGE_KEYS?.history || 'dt_eff_history') || '{}'),
+      streak: parseInt(localStorage.getItem(window.STORAGE_KEYS?.streak || 'dt_streak') || '0'),
       lastSync: Date.now()
     }, { merge: true });
     
@@ -226,6 +282,10 @@ async function saveDataToFirestore() {
     }
   } finally {
     isSyncing = false;
+    // If a sync was requested while we were busy, trigger it now
+    if (pendingSync) {
+      saveDataToFirestore();
+    }
   }
 }
 

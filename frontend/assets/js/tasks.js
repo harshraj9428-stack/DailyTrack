@@ -7,6 +7,7 @@
 let tasks = [];
 let currentFilter = 'all';
 let confettiFired = false;
+let chartDebounceTimer = null;
 
 // ── Persistence ───────────────────────────────────────
 function saveTasks() {
@@ -402,13 +403,16 @@ function renderTasks() {
   // Bottom actions row
   document.getElementById('tasks-actions').style.display = total > 0 ? 'flex' : 'none';
 
-  // Charts
-  const history = updateEfficiencyHistory(pct);
-  updateTrendChart(getLastNDaysValues(history, 30));
-  updateSparkBars(getLastNDaysValues(history, 7));
-  updateDonut();
-  updateOverview();
-  updateScorecard(history);
+  // Debounced Charts & Analytics Update to prevent lag
+  clearTimeout(chartDebounceTimer);
+  chartDebounceTimer = setTimeout(() => {
+    const history = updateEfficiencyHistory(pct);
+    updateTrendChart(getLastNDaysValues(history, 30));
+    updateSparkBars(getLastNDaysValues(history, 7));
+    updateDonut();
+    updateOverview();
+    updateScorecard(history);
+  }, 300); 
 }
 
 function updateScorecard(history) {

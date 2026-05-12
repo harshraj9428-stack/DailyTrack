@@ -1095,3 +1095,9 @@ body:not(.unauthenticated) .welcome-overlay {
   letter-spacing: 0.3px;
 }
 
+.btn-auth-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
