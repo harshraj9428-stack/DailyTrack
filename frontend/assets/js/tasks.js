@@ -4,14 +4,14 @@
    ══════════════════════════════════════════════════════ */
 
 // ── State ─────────────────────────────────────────────
-let tasks = [];
+window.tasks = []; // Global tasks array
 let currentFilter = 'all';
 let confettiFired = false;
 let chartDebounceTimer = null;
 
 // ── Persistence ───────────────────────────────────────
 function saveTasks() {
-  localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(tasks));
+  localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(window.tasks));
   localStorage.setItem(STORAGE_KEYS.date, todayStr());
   
   // Trigger Cloud Sync if logged in
@@ -32,7 +32,7 @@ function loadTasks() {
       .filter(t => !t.done)
       .map(t => ({ ...t, carried: true, id: uid(), ts: Date.now() }));
 
-    tasks = carried;
+    window.tasks = carried;
 
     if (carried.length > 0) {
       document.getElementById('pending-banner').classList.add('show');
@@ -43,16 +43,16 @@ function loadTasks() {
     Streak.update(savedDate);
     saveTasks();
   } else {
-    tasks = saved;
+    window.tasks = saved;
   }
 }
 
 // ── Efficiency Formula ────────────────────────────────
 // Efficiency = (Completed Tasks / Total Tasks) × 100
 function calcEfficiency() {
-  if (tasks.length === 0) return 0;
-  const done = tasks.filter(t => t.done).length;
-  return Math.round((done / tasks.length) * 100);
+  if (window.tasks.length === 0) return 0;
+  const done = window.tasks.filter(t => t.done).length;
+  return Math.round((done / window.tasks.length) * 100);
 }
 
 // ── Efficiency History ───────────────────────────────
@@ -183,14 +183,14 @@ function updateDonut() {
   let market = 0;
   let other = 0;
 
-  tasks.forEach(t => {
+  window.tasks.forEach(t => {
     if (t.category === 'tech') dev++;
     else if (t.category === 'academics') plan++;
     else if (t.category === 'health' || t.category === 'selflearn') market++;
     else other++;
   });
 
-  const total = tasks.length;
+  const total = window.tasks.length;
   const C = 2 * Math.PI * 44;
   const values = total === 0 ? [0, 0, 0, 0] : [dev, plan, market, other];
   const lengths = values.map(v => total === 0 ? 0 : (v / total) * C);
@@ -222,9 +222,9 @@ function updateOverview() {
   const el = document.querySelector('.overview-card .mini-list');
   if (!el) return;
 
-  const total = tasks.length;
-  const done = tasks.filter(t => t.done).length;
-  const pending = tasks.filter(t => !t.done);
+  const total = window.tasks.length;
+  const done = window.tasks.filter(t => t.done).length;
+  const pending = window.tasks.filter(t => !t.done);
 
   if (total === 0) {
     el.innerHTML = `
@@ -284,14 +284,14 @@ function addTask(text, category = null) {
     category,
   };
 
-  tasks.unshift(task);
+  window.tasks.unshift(task);
   saveTasks();
   renderTasks();
   return true;
 }
 
 function toggleTask(id) {
-  const task = tasks.find(t => t.id === id);
+  const task = window.tasks.find(t => String(t.id) === String(id));
   if (!task) return;
   task.done = !task.done;
   saveTasks();
@@ -300,25 +300,25 @@ function toggleTask(id) {
 }
 
 function deleteTask(id) {
-  tasks = tasks.filter(t => t.id !== id);
+  window.tasks = window.tasks.filter(t => String(t.id) !== String(id));
   saveTasks();
   renderTasks();
   Toast.show('Task removed.', '🗑');
 }
 
 function clearCompleted() {
-  const before = tasks.length;
-  tasks = tasks.filter(t => !t.done);
+  const before = window.tasks.length;
+  window.tasks = window.tasks.filter(t => !t.done);
   saveTasks();
   renderTasks();
-  const removed = before - tasks.length;
+  const removed = before - window.tasks.length;
   if (removed > 0) Toast.show(`${removed} completed task(s) cleared.`, '🗑');
 }
 
 function clearAll() {
-  if (tasks.length === 0) return;
+  if (window.tasks.length === 0) return;
   if (confirm('Are you sure you want to clear ALL tasks for today?')) {
-    tasks = [];
+    window.tasks = [];
     saveTasks();
     renderTasks();
     Toast.show('All tasks cleared.', '🗑');
@@ -326,7 +326,7 @@ function clearAll() {
 }
 
 function completeAll() {
-  tasks.forEach(t => t.done = true);
+  window.tasks.forEach(t => t.done = true);
   saveTasks();
   renderTasks();
   Toast.show('All tasks completed! 🚀', '🚀');
@@ -335,9 +335,9 @@ function completeAll() {
 // ── Render ────────────────────────────────────────────
 function renderTasks() {
   const pct     = calcEfficiency();
-  const total   = tasks.length;
-  const done    = tasks.filter(t => t.done).length;
-  const pending = tasks.filter(t => !t.done).length;
+  const total   = window.tasks.length;
+  const done    = window.tasks.filter(t => t.done).length;
+  const pending = window.tasks.filter(t => !t.done).length;
 
   // Update stats
   document.getElementById('total-count').textContent   = total;
@@ -382,7 +382,7 @@ function renderTasks() {
   }
 
   // Filter tasks
-  const filtered = tasks.filter(t => {
+  const filtered = window.tasks.filter(t => {
     if (currentFilter === 'done')    return t.done;
     if (currentFilter === 'pending') return !t.done;
     return true;
@@ -437,7 +437,7 @@ function updateScorecard(history) {
   else if (avg >= 60) { grade = 'B'; color = 'var(--amber)'; msg = 'Above Average. Push more!'; }
   else if (avg >= 50) { grade = 'C'; color = 'var(--amber)'; msg = 'Steady progress.'; }
   else if (avg > 0) { grade = 'D'; color = 'var(--red)'; msg = 'Focus on consistency.'; }
-  else if (tasks.length > 0) { grade = 'F'; color = 'var(--red)'; msg = 'Start checking off tasks!'; }
+  else if (window.tasks.length > 0) { grade = 'F'; color = 'var(--red)'; msg = 'Start checking off tasks!'; }
 
   gradeEl.textContent = grade;
   gradeEl.style.color = color;
@@ -454,13 +454,13 @@ function buildTaskHTML(task) {
     ? `<span class="carried-badge">carried</span>`
     : '';
   const aiBtn = !task.done
-    ? `<button class="task-act-btn ai" onclick="AIModule.quickBreakdown(${task.id})" title="AI: Break down this task">🤖</button>`
+    ? `<button class="task-act-btn ai" onclick="AIModule.quickBreakdown('${task.id}')" title="AI: Break down this task">🤖</button>`
     : '';
 
   return `
     <li class="task-item ${task.done ? 'done' : ''} ${task.carried && !task.done ? 'carried' : ''}">
       <div class="cb-wrap">
-        <input type="checkbox" class="task-cb-input" id="task-${task.id}" onchange="toggleTask(${task.id})" ${task.done ? 'checked' : ''}>
+        <input type="checkbox" class="task-cb-input" id="task-${task.id}" onchange="toggleTask('${task.id}')" ${task.done ? 'checked' : ''}>
         <label for="task-${task.id}" class="custom-cb">
           <span class="check-icon">✓</span>
         </label>
@@ -475,7 +475,7 @@ function buildTaskHTML(task) {
       </div>
       <div class="task-actions">
         ${aiBtn}
-        <button class="task-act-btn delete" onclick="deleteTask(${task.id})" title="Delete task">✕</button>
+        <button class="task-act-btn delete" onclick="deleteTask('${task.id}')" title="Delete task">✕</button>
       </div>
     </li>`;
 }
@@ -515,7 +515,14 @@ function initFilterTabs() {
 }
 
 // Expose to global scope for module access
-window.tasks = tasks;
 window.renderTasks = renderTasks;
 window.toggleTask = toggleTask;
 window.deleteTask = deleteTask;
+window.addTask = addTask;
+window.calcEfficiency = calcEfficiency;
+window.initFilterTabs = initFilterTabs;
+window.clearAll = clearAll;
+window.clearCompleted = clearCompleted;
+window.completeAll = completeAll;
+window.clearAnalytics = clearAnalytics;
+window.loadTasks = loadTasks;

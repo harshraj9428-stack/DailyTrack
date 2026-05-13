@@ -47,20 +47,27 @@ const welcomeLoginBtn = document.getElementById('welcome-login-btn');
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   
-  // Remove loading state once auth is determined
-  document.body.classList.remove('loading');
-  const loadingOverlay = document.getElementById('loading-overlay');
-  if (loadingOverlay) loadingOverlay.style.display = 'none';
-
   if (user) {
     console.log("User logged in:", user.email || "Guest");
     document.body.classList.remove('unauthenticated');
     updateAuthUI(true);
+    
+    // Perform sync before removing loader to avoid UI "jump"
     await syncDataFromFirestore();
   } else {
     console.log("User logged out");
     document.body.classList.add('unauthenticated');
     updateAuthUI(false);
+  }
+
+  // Remove loading state once auth is determined AND data is synced
+  document.body.classList.remove('loading');
+  const loadingOverlay = document.getElementById('loading-overlay');
+  if (loadingOverlay) {
+    loadingOverlay.classList.add('fade-out');
+    setTimeout(() => {
+      loadingOverlay.style.display = 'none';
+    }, 400);
   }
 });
 

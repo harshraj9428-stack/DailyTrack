@@ -109,7 +109,7 @@ const AIModule = (() => {
 
   // ── AI Feature: Break Down Task ──────────────────────
   async function breakdown() {
-    const pending = tasks.filter(t => !t.done);
+    const pending = window.tasks.filter(t => !t.done);
     if (!pending.length) {
       showOutput('<span style="color:var(--amber)">No pending tasks to break down. Add a task first!</span>');
       return;
@@ -139,7 +139,7 @@ const AIModule = (() => {
 
   // ── AI Feature: Plan My Day ──────────────────────────
   async function planDay() {
-    const pending = tasks.filter(t => !t.done).map(t => t.text).slice(0, 8);
+    const pending = window.tasks.filter(t => !t.done).map(t => t.text).slice(0, 8);
     showTyping('Building your schedule');
 
     const taskList = pending.length
@@ -169,7 +169,7 @@ const AIModule = (() => {
   // ── AI Feature: Efficiency Coach ────────────────────
   async function coach() {
     const pct     = calcEfficiency();
-    const allList = tasks.map(t => `[${t.done ? 'DONE' : 'PENDING'}] ${t.text}`).join('\n');
+    const allList = window.tasks.map(t => `[${t.done ? 'DONE' : 'PENDING'}] ${t.text}`).join('\n');
 
     showTyping('Analyzing your productivity');
 
@@ -211,7 +211,7 @@ const AIModule = (() => {
 
   // ── AI Feature: Prioritize Tasks ────────────────────
   async function prioritize() {
-    const pending = tasks.filter(t => !t.done).map(t => t.text);
+    const pending = window.tasks.filter(t => !t.done).map(t => t.text);
     if (!pending.length) {
       showOutput('<span style="color:var(--amber)">No pending tasks to prioritize!</span>');
       return;
@@ -257,7 +257,7 @@ const AIModule = (() => {
       `As a senior academic coach for an IIT Patna student, analyze this 7-day performance report:\n\n` +
       `Weekly Efficiency Data:\n${historyText}\n` +
       `Average Efficiency: ${avg}%\n\n` +
-      `Tasks for today:\n${tasks.map(t => t.text).join(', ') || 'No tasks'}\n\n` +
+      `Tasks for today:\n${window.tasks.map(t => t.text).join(', ') || 'No tasks'}\n\n` +
       `Please provide:\n` +
       `1. A summary of their weekly trend.\n` +
       `2. Identification of peak productivity days vs. slumps.\n` +
@@ -276,7 +276,7 @@ const AIModule = (() => {
 
   // ── Quick breakdown from task row 🤖 button ──────────
   async function quickBreakdown(taskId) {
-    const task = tasks.find(t => t.id === taskId);
+    const task = window.tasks.find(t => String(t.id) === String(taskId));
     if (!task) return;
 
     // Auto-open AI panel
