@@ -21,29 +21,36 @@ function saveTasks() {
 }
 
 function loadTasks() {
-  const savedDate = localStorage.getItem(STORAGE_KEYS.date);
-  const raw       = localStorage.getItem(STORAGE_KEYS.tasks);
-  const saved     = raw ? JSON.parse(raw) : [];
-  const today     = todayStr();
+  try {
+    const savedDate = localStorage.getItem(STORAGE_KEYS.date);
+    const raw       = localStorage.getItem(STORAGE_KEYS.tasks);
+    const saved     = raw ? JSON.parse(raw) : [];
+    const today     = todayStr();
 
-  if (savedDate && savedDate !== today && saved.length > 0) {
-    // Carry forward only incomplete tasks
-    const carried = saved
-      .filter(t => !t.done)
-      .map(t => ({ ...t, carried: true, id: uid(), ts: Date.now() }));
+    if (savedDate && savedDate !== today && Array.isArray(saved) && saved.length > 0) {
+      // Carry forward only incomplete tasks
+      const carried = saved
+        .filter(t => t && !t.done)
+        .map(t => ({ ...t, carried: true, id: uid(), ts: Date.now() }));
 
-    window.tasks = carried;
+      window.tasks = carried;
 
-    if (carried.length > 0) {
-      document.getElementById('pending-banner').classList.add('show');
-      document.getElementById('pending-cnt').textContent = carried.length;
-      Toast.show(`⏰ ${carried.length} task(s) carried over from yesterday!`, '⏰');
+      if (carried.length > 0) {
+        document.getElementById('pending-banner')?.classList.add('show');
+        const cntEl = document.getElementById('pending-cnt');
+        if (cntEl) cntEl.textContent = carried.length;
+        Toast.show(`⏰ ${carried.length} task(s) carried over from yesterday!`, '⏰');
+      }
+
+      Streak.update(savedDate);
+      saveTasks();
+    } else {
+      window.tasks = Array.isArray(saved) ? saved : [];
     }
-
-    Streak.update(savedDate);
-    saveTasks();
-  } else {
-    window.tasks = saved;
+  } catch (err) {
+    console.error("Failed to load tasks:", err);
+    window.tasks = [];
+    Toast.show("Error loading saved tasks. Starting fresh.", "⚠️");
   }
 }
 
@@ -57,8 +64,13 @@ function calcEfficiency() {
 
 // ── Efficiency History ───────────────────────────────
 function getEfficiencyHistory() {
-  const raw = localStorage.getItem(STORAGE_KEYS.history);
-  return raw ? JSON.parse(raw) : {};
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.history);
+    return raw ? JSON.parse(raw) : {};
+  } catch (err) {
+    console.error("Error parsing history:", err);
+    return {};
+  }
 }
 
 function saveEfficiencyHistory(map) {

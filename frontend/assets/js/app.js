@@ -45,6 +45,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
+// ── Global Error Handling ─────────────────────────────
+window.addEventListener('error', (event) => {
+  console.error("Runtime Error:", event.error);
+  // Optional: show a toast for critical errors
+  if (event.error?.message?.includes('Firebase')) {
+    if (window.Toast) window.Toast.show("Connection issue. Retrying...", "📡");
+  }
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error("Unhandled Promise Rejection:", event.reason);
+});
+
 // ── Handle add from input field ───────────────────────
 function handleAdd() {
   const input = document.getElementById('task-input');

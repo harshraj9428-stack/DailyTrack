@@ -39,6 +39,14 @@ html { scroll-behavior: smooth; }
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+.shake { animation: shake 0.4s ease-in-out; }
+
 body {
   font-family: var(--font-b);
   color: var(--text);
@@ -704,10 +712,14 @@ body::before {
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(8,10,18,0.75);
-  display: none; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   z-index: 3000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
 }
-.modal-overlay.show { display: flex; }
+.modal-overlay.show { opacity: 1; visibility: visible; }
 .modal {
   width: min(720px, 94vw);
   max-height: 86vh;
@@ -716,7 +728,10 @@ body::before {
   border-radius: 16px;
   box-shadow: var(--shadow);
   display: flex; flex-direction: column;
+  transform: scale(0.95) translateY(10px);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+.modal-overlay.show .modal { transform: scale(1) translateY(0); }
 .modal-header {
   padding: 14px 18px;
   border-bottom: 1px solid rgba(255,255,255,0.12);
@@ -864,6 +879,7 @@ body::before {
   outline: none;
 }
 .form-group input:focus { border-color: var(--accent); }
+.form-group input.error-field { border-color: var(--danger) !important; background: rgba(239, 68, 68, 0.05); }
 
 .btn-auth-primary {
   background: var(--accent);
@@ -902,10 +918,15 @@ body::before {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.btn-social:hover { background: rgba(255,255,255,0.1); }
+.btn-social:hover { 
+  background: rgba(255,255,255,0.1); 
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,0.25);
+}
+.btn-social:active { transform: translateY(0); }
 .btn-social img { width: 18px; height: 18px; }
 .btn-social.guest { border-color: rgba(34,211,238,0.25); }
-.btn-social.guest:hover { border-color: var(--accent-2); }
+.btn-social.guest:hover { border-color: var(--accent-2); box-shadow: 0 4px 12px rgba(34,211,238,0.15); }
 
 /* ── Forced Auth State ──────────────────────────────── */
 .unauthenticated .app-shell {
@@ -930,8 +951,10 @@ body::before {
 
 body:not(.unauthenticated) .welcome-overlay {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transform: translateY(-20px);
+  transform: scale(1.05);
+  transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .welcome-content {
@@ -1005,8 +1028,9 @@ body:not(.unauthenticated) .welcome-overlay {
 
 .loading-overlay.fade-out {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s;
 }
 
 .loader {

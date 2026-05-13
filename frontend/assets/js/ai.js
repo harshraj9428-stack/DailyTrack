@@ -55,17 +55,37 @@ const AIModule = (() => {
 
   // ── Chat via FastAPI backend ─────────────────────────
   async function streamChat(messages) {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: getModel(),
-        messages
-      })
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 1 minute timeout for heavy LLM tasks
 
-    const data = await response.json();
-    return data.message.content;
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: getModel(),
+          messages
+        }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || `Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (!data?.message?.content) {
+        throw new Error('Invalid response format from AI backend');
+      }
+      return data.message.content;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') throw new Error('Request timed out. The AI model took too long to respond.');
+      throw err;
+    }
   }
 
   // ── Show output in panel ─────────────────────────────

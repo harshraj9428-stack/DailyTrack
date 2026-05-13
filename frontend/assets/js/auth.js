@@ -43,45 +43,56 @@ const googleBtn = document.getElementById('google-login');
 const guestBtn = document.getElementById('guest-login');
 const welcomeLoginBtn = document.getElementById('welcome-login-btn');
 
-// ── Initialization ─────────────────────────────────────
-onAuthStateChanged(auth, async (user) => {
-  currentUser = user;
-  
-  if (user) {
-    console.log("User logged in:", user.email || "Guest");
-    document.body.classList.remove('unauthenticated');
-    updateAuthUI(true);
-    
-    // Perform sync before removing loader to avoid UI "jump"
-    await syncDataFromFirestore();
-  } else {
-    console.log("User logged out");
-    document.body.classList.add('unauthenticated');
-    updateAuthUI(false);
+// Consolidated Auth Initialization
+async function initAuth() {
+  try {
+    // 1. Handle Redirect Result (for Google Login)
+    const result = await getRedirectResult(auth);
+    if (result?.user) {
+      console.log("Redirect login successful:", result.user.email);
+      if (window.Toast) window.Toast.show('Google login successful!', '🌐');
+    }
+  } catch (error) {
+    console.error("Redirect error:", error);
+    const friendly = mapAuthError(error.code);
+    if (window.Toast) window.Toast.show(friendly, '❌');
   }
 
-  // Remove loading state once auth is determined AND data is synced
+  // 2. Listen for Auth State Changes
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    
+    if (user) {
+      console.log("User logged in:", user.email || "Guest");
+      document.body.classList.remove('unauthenticated');
+      updateAuthUI(true);
+      
+      // Perform sync before removing loader to avoid UI "jump"
+      await syncDataFromFirestore();
+    } else {
+      console.log("User logged out");
+      document.body.classList.add('unauthenticated');
+      updateAuthUI(false);
+    }
+
+    // Finalize loading state
+    hideLoadingOverlay();
+  });
+}
+
+function hideLoadingOverlay() {
   document.body.classList.remove('loading');
   const loadingOverlay = document.getElementById('loading-overlay');
   if (loadingOverlay) {
     loadingOverlay.classList.add('fade-out');
     setTimeout(() => {
       loadingOverlay.style.display = 'none';
-    }, 400);
+    }, 500);
   }
-});
+}
 
-// Handle Redirect Result (for Google Login)
-getRedirectResult(auth).then((result) => {
-  if (result?.user) {
-    console.log("Redirect login successful:", result.user.email);
-    if (window.Toast) window.Toast.show('Google login successful!', '🌐');
-  }
-}).catch((error) => {
-  console.error("Redirect error:", error);
-  const friendly = mapAuthError(error.code);
-  if (window.Toast) window.Toast.show(friendly, '❌');
-});
+// Start Auth Init
+initAuth();
 
 // Map Firebase Error Codes to User Friendly Messages
 function mapAuthError(code) {
@@ -94,6 +105,10 @@ function mapAuthError(code) {
     case 'auth/invalid-credential': return 'Invalid login credentials.';
     case 'auth/popup-closed-by-user': return 'Login window was closed.';
     case 'auth/cancelled-via-redirect': return 'Login was cancelled.';
+    case 'auth/network-request-failed': return 'Network error. Check your connection.';
+    case 'auth/too-many-requests': return 'Too many attempts. Try again later.';
+    case 'auth/user-disabled': return 'This account has been disabled.';
+    case 'auth/operation-not-allowed': return 'This login method is not enabled.';
     default: return 'Authentication failed. Please try again.';
   }
 }
@@ -126,14 +141,23 @@ function updateAuthUI(isLoggedIn) {
 
 function switchTab(mode) {
   authMode = mode;
+  const confirmGroup = document.getElementById('confirm-password-group');
+  const confirmInput = document.getElementById('auth-confirm-password');
+
   if (mode === 'login') {
     tabLogin.classList.add('active');
     tabSignup.classList.remove('active');
     authSubmitBtn.textContent = 'Login to Account';
+    confirmGroup?.classList.add('hidden');
+    if (confirmInput) confirmInput.required = false;
+    document.getElementById('auth-email')?.focus();
   } else {
     tabLogin.classList.remove('active');
     tabSignup.classList.add('active');
     authSubmitBtn.textContent = 'Create Account';
+    confirmGroup?.classList.remove('hidden');
+    if (confirmInput) confirmInput.required = true;
+    document.getElementById('auth-email')?.focus();
   }
 }
 
@@ -158,16 +182,31 @@ logoutBtn?.addEventListener('click', () => {
 
 authForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = document.getElementById('auth-email').value.trim();
-  const password = document.getElementById('auth-password').value;
+  const emailInput = document.getElementById('auth-email');
+  const passInput = document.getElementById('auth-password');
+  const confirmInput = document.getElementById('auth-confirm-password');
+  const modalInner = authModal?.querySelector('.modal');
+
+  const email = emailInput.value.trim();
+  const password = passInput.value;
+  const confirm = confirmInput?.value;
+
+  // Clear previous errors
+  [emailInput, passInput, confirmInput].forEach(el => el?.classList.remove('error-field'));
 
   // Basic Validation
   if (!email || !password) {
-    if (window.Toast) window.Toast.show('Please fill all fields', '⚠️');
+    triggerErrorFeedback(modalInner, 'Please fill all fields');
     return;
   }
   if (password.length < 6) {
-    if (window.Toast) window.Toast.show('Password must be 6+ chars', '⚠️');
+    passInput.classList.add('error-field');
+    triggerErrorFeedback(modalInner, 'Password must be 6+ chars');
+    return;
+  }
+  if (authMode === 'signup' && password !== confirm) {
+    confirmInput.classList.add('error-field');
+    triggerErrorFeedback(modalInner, 'Passwords do not match');
     return;
   }
 
@@ -187,30 +226,50 @@ authForm?.addEventListener('submit', async (e) => {
   } catch (error) {
     console.error("Auth error:", error);
     const friendly = mapAuthError(error.code);
-    if (window.Toast) window.Toast.show(friendly, '❌');
+    triggerErrorFeedback(modalInner, friendly);
+    
+    if (error.code.includes('password')) passInput.classList.add('error-field');
+    if (error.code.includes('email')) emailInput.classList.add('error-field');
   } finally {
     authSubmitBtn.disabled = false;
     authSubmitBtn.textContent = originalText;
   }
 });
 
+function triggerErrorFeedback(element, message) {
+  if (window.Toast) window.Toast.show(message, '❌');
+  if (element) {
+    element.classList.add('shake');
+    setTimeout(() => element.classList.remove('shake'), 400);
+  }
+}
+
 googleBtn?.addEventListener('click', async () => {
   try {
+    googleBtn.disabled = true;
+    const originalContent = googleBtn.innerHTML;
+    googleBtn.innerHTML = 'Connecting...';
+    
     // Switch to Redirect to avoid COOP popup blocks on localhost
     await signInWithRedirect(auth, googleProvider);
   } catch (error) {
     console.error("Google login error:", error);
     if (window.Toast) window.Toast.show(error.message, '❌');
+    googleBtn.disabled = false;
   }
 });
 
 guestBtn?.addEventListener('click', async () => {
   try {
+    guestBtn.disabled = true;
+    guestBtn.innerHTML = 'Signing in...';
     await signInAnonymously(auth);
     if (window.Toast) window.Toast.show('Continuing as Guest', '👤');
   } catch (error) {
     console.error("Guest login error:", error);
     if (window.Toast) window.Toast.show(error.message, '❌');
+    guestBtn.disabled = false;
+    guestBtn.innerHTML = '<span class="feat-icon">👤</span> Continue as Guest';
   }
 });
 
@@ -218,33 +277,37 @@ guestBtn?.addEventListener('click', async () => {
 async function syncDataFromFirestore() {
   if (!currentUser) return;
   
-  const userDocRef = doc(db, 'users', currentUser.uid);
-  const docSnap = await getDoc(userDocRef);
+  try {
+    const userDocRef = doc(db, 'users', currentUser.uid);
+    const docSnap = await getDoc(userDocRef);
 
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-    if (data.tasks) {
-      console.log("Syncing tasks from Firestore");
-      // Merge logic or overwrite? User expectation is usually sync.
-      // We overwrite local state with cloud state for consistency.
-      window.tasks = data.tasks;
-      window.renderTasks();
-      
-      // Update history if exists
-      if (data.history) {
-        localStorage.setItem(window.STORAGE_KEYS?.history || 'dt_eff_history', JSON.stringify(data.history));
-      }
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.tasks) {
+        console.log("Syncing tasks from Firestore");
+        // Overwrite local state with cloud state for consistency.
+        window.tasks = Array.isArray(data.tasks) ? data.tasks : [];
+        window.renderTasks();
+        
+        // Update history if exists
+        if (data.history) {
+          localStorage.setItem(window.STORAGE_KEYS?.history || 'dt_eff_history', JSON.stringify(data.history));
+        }
 
-      // Update streak if exists
-      if (data.streak !== undefined) {
-        localStorage.setItem(window.STORAGE_KEYS?.streak || 'dt_streak', data.streak);
-        if (window.Streak) window.Streak.render();
+        // Update streak if exists
+        if (data.streak !== undefined) {
+          localStorage.setItem(window.STORAGE_KEYS?.streak || 'dt_streak', data.streak);
+          if (window.Streak) window.Streak.render();
+        }
       }
+    } else {
+      // New user, save current local tasks to Firestore
+      console.log("Creating new user profile in Firestore");
+      await saveDataToFirestore();
     }
-  } else {
-    // New user, save current local tasks to Firestore
-    console.log("Creating new user profile in Firestore");
-    await saveDataToFirestore();
+  } catch (err) {
+    console.error("Firestore sync error:", err);
+    if (window.Toast) window.Toast.show("Cloud sync failed. Working offline.", "📡");
   }
 }
 
